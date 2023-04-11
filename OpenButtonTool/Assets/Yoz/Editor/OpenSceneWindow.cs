@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using System.Linq;
 using UnityEditor;
@@ -8,8 +10,12 @@ namespace Yoz.Editor
 {
     public class OpenSceneWindow : EditorWindow
     {
+        private readonly Vector2 _sceneOpenButtonMinSize = new Vector2(70, 10);
+        private readonly Vector2 _sceneOpenButtonMaxSize = new Vector2(300, 50);
         private readonly Vector2 _buttonMinSize = new Vector2(100, 20);
         private readonly Vector2 _buttonMaxSize = new Vector2(1000, 100);
+        private List<string> _sceneNames = new List<string>();
+
 
         [MenuItem("YozTool/SceneWindow")]
         static void ShowWindow()
@@ -19,22 +25,34 @@ namespace Yoz.Editor
 
         private void OnGUI()
         {
-            GUIStyle buttonStyle = new GUIStyle("button") {fontSize = 30};
+            GUIStyle buttonStyle = new GUIStyle("button") {fontSize = 20};
             var layoutOptions = new GUILayoutOption[]
             {
-                GUILayout.MinWidth(_buttonMinSize.x),
-                GUILayout.MinHeight(_buttonMinSize.y),
-                GUILayout.MaxWidth(_buttonMaxSize.x),
-                GUILayout.MaxHeight(_buttonMaxSize.y),
+                GUILayout.MinWidth(_sceneOpenButtonMinSize.x),
+                GUILayout.MinHeight(_sceneOpenButtonMinSize.y),
+                GUILayout.MaxWidth(_sceneOpenButtonMaxSize.x),
+                GUILayout.MaxHeight(_sceneOpenButtonMaxSize.y),
             };
-            
-            // Title Button
-            if (GUILayout.Button("Title", buttonStyle, layoutOptions))
+
+            foreach (var sceneName in _sceneNames)
             {
-                if (!EditorSceneManager.SaveModifiedScenesIfUserWantsTo(
-                        new Scene[] {SceneManager.GetActiveScene()})) return;
+                Debug.Log(sceneName);
+                if (GUILayout.Button(sceneName, buttonStyle, layoutOptions))
+                {
+                    if (!EditorSceneManager.SaveModifiedScenesIfUserWantsTo(
+                            new Scene[] {SceneManager.GetActiveScene()})) return;
                 
-                OpenScene("Title");
+                    OpenScene(sceneName);
+                }
+            }
+            
+            // Refresh Scenes In Build button
+            if (GUILayout.Button("Refresh scenes", buttonStyle, layoutOptions))
+            {
+                _sceneNames = EditorBuildSettings.scenes
+                    .Where(scene => scene.enabled)
+                    .Select(scene => Path.GetFileNameWithoutExtension(scene.path))
+                    .ToList();
             }
         }
 
@@ -51,4 +69,3 @@ namespace Yoz.Editor
         }
     }
 }
-
